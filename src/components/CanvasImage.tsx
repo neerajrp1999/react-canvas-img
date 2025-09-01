@@ -1,35 +1,16 @@
-import React, {
-  useRef,
-  useEffect,
-  useState,
-  useImperativeHandle,
-  forwardRef,
-} from "react";
-
-export type PixelCoords = { x: number; y: number };
-export type PixelColor = { rgb: string; hex: string };
-
-export interface CanvasImageProps {
-  src: string | File;
-  width?: number;
-  height?: number;
-  onClickPixel?: (coords: PixelCoords, color: PixelColor) => void;
-  onHoverPixel?: (coords: PixelCoords, color: PixelColor) => void;
-  onCanvasReady?: (
-    ctx: CanvasRenderingContext2D,
-    canvas: HTMLCanvasElement
-  ) => void;
-}
-
-export interface CanvasImageRef {
-  getCanvas: () => HTMLCanvasElement | null;
-  getContext: () => CanvasRenderingContext2D | null;
-}
+import React, { useRef, useEffect, useState, useImperativeHandle, forwardRef } from "react";
+import type { CanvasImageProps, CanvasImageRef, PixelColor, PixelCoords } from "../interfaceOrType/interfaceOrType";
 
 export const CanvasImage = forwardRef<CanvasImageRef, CanvasImageProps>(
-  ({ src, width, height, onClickPixel, onHoverPixel, onCanvasReady }, ref) => {
+  ({ src, width, height, useOriginalCoords = true, onClickPixel, onHoverPixel, onCanvasReady }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [imageSrc, setImageSrc] = useState<string>("");
+    const [imgMeta, setImgMeta] = useState<{
+      naturalWidth: number;
+      naturalHeight: number;
+      finalWidth: number;
+      finalHeight: number;
+    } | null>(null);
 
     useImperativeHandle(ref, () => ({
       getCanvas: () => canvasRef.current,
@@ -99,30 +80,51 @@ export const CanvasImage = forwardRef<CanvasImageRef, CanvasImageProps>(
         ctx.clearRect(0, 0, finalWidth, finalHeight);
         ctx.drawImage(img, 0, 0, finalWidth, finalHeight);
 
+        setImgMeta({
+          naturalWidth: img.naturalWidth,
+          naturalHeight: img.naturalHeight,
+          finalWidth,
+          finalHeight,
+        });
+
         onCanvasReady?.(ctx, canvasRef.current!);
       };
     }, [imageSrc, width, height, onCanvasReady]);
 
+    const mapToOriginalCoords = (x: number, y: number): PixelCoords => {
+      if (!imgMeta) return { x, y };
+      const scaleX = imgMeta.naturalWidth / imgMeta.finalWidth;
+      const scaleY = imgMeta.naturalHeight / imgMeta.finalHeight;
+      return {
+        x: Math.floor(x * scaleX),
+        y: Math.floor(y * scaleY),
+      };
+    };
+
     const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-      if (!canvasRef.current || !onClickPixel) return;
+      if (!canvasRef.current || !onClickPixel || !imgMeta) return;
       const rect = canvasRef.current.getBoundingClientRect();
       const x = Math.floor(e.clientX - rect.left);
       const y = Math.floor(e.clientY - rect.top);
       const ctx = canvasRef.current.getContext("2d");
       if (!ctx) return;
+
+      const coords = useOriginalCoords ? mapToOriginalCoords(x, y) : { x, y };
       const color = getPixelColor(ctx, x, y);
-      onClickPixel({ x, y }, color);
+      onClickPixel(coords, color);
     };
 
     const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-      if (!canvasRef.current || !onHoverPixel) return;
+      if (!canvasRef.current || !onHoverPixel || !imgMeta) return;
       const rect = canvasRef.current.getBoundingClientRect();
       const x = Math.floor(e.clientX - rect.left);
       const y = Math.floor(e.clientY - rect.top);
       const ctx = canvasRef.current.getContext("2d");
       if (!ctx) return;
+
+      const coords = useOriginalCoords ? mapToOriginalCoords(x, y) : { x, y };
       const color = getPixelColor(ctx, x, y);
-      onHoverPixel({ x, y }, color);
+      onHoverPixel(coords, color);
     };
 
     return (

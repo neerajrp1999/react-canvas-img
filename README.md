@@ -4,18 +4,19 @@
 [![npm downloads](https://img.shields.io/npm/dt/react-canvas-img.svg)](https://www.npmjs.com/package/react-canvas-img)
 [![license](https://img.shields.io/npm/l/react-canvas-img.svg)](./LICENSE)
 
-A lightweight **React component** to load images into a `<canvas>` and read pixel data (color and coordinates) on hover or click.  
+A lightweight **React component** to load images into a `<canvas>` and read pixel data (color and coordinates) on hover or click.
 Fully written in **TypeScript** with support for refs, hooks, and callbacks.
 
 
 ## ✨ Features
 
-- Load images into `<canvas>` easily
-- Get pixel color + coordinates on **hover** and **click**
-- Exposes canvas context and element via `onCanvasReady`
-- Supports refs to call canvas methods
-- Written in TypeScript – full type definitions included
-- Lightweight, no external dependencies
+* Load images into `<canvas>` easily
+* Get pixel color + coordinates on **hover** and **click**
+* Toggle between **canvas coordinates** and **original image coordinates**
+* Exposes canvas context and element via `onCanvasReady`
+* Supports refs to call canvas methods
+* Written in TypeScript – full type definitions included
+* Lightweight, no external dependencies
 
 
 ## 📦 Installation
@@ -31,7 +32,7 @@ yarn add react-canvas-img
 
 ```tsx
 import { useState } from "react";
-import { CanvasImage, type PixelCoords, type PixelColor } from "react-canvas-img";
+import CanvasImage, { type PixelCoords, type PixelColor } from "react-canvas-img";
 
 export default function App() {
   const [clickedPixel, setClickedPixel] = useState<{
@@ -42,8 +43,9 @@ export default function App() {
   return (
     <CanvasImage
       src="/sample.png"
-      width={400}     // optional → if not given = auto
-      height={300}    // optional → if not given = auto
+      width={400}     // optional → default: auto
+      height={300}    // optional → default: auto
+      useOriginalCoords={true} // optional → default: true
       onClickPixel={(coords, color) => setClickedPixel({ coords, color })}
       onHoverPixel={(coords, color) => console.log("Hover:", coords, color)}
       onCanvasReady={(ctx) => {
@@ -55,15 +57,12 @@ export default function App() {
 }
 ```
 
-## 🚀 Example
+
+## 🎮 Demo Example
 
 ```tsx
 import { useState } from "react";
-import {
-  CanvasImage,
-  type PixelCoords,
-  type PixelColor,
-} from "react-canvas-img";
+import CanvasImage, { type PixelCoords, type PixelColor } from "./index";
 
 export default function App() {
   const [imageSrc, setImageSrc] = useState<string | File>("/sample.png");
@@ -93,7 +92,7 @@ export default function App() {
   return (
     <div className="p-4 space-y-4">
       <h2 className="text-xl font-bold">🎨 react-canvas-img Demo</h2>
-      
+
       <div>
         <label className="font-medium">Upload Image: </label>
         <input
@@ -148,8 +147,9 @@ export default function App() {
 
       <CanvasImage
         src={imageSrc}
-        width={parseSize(width)}
-        height={parseSize(height)}
+        width={parseSize(width)} // default: auto
+        height={parseSize(height)} // default: auto
+        useOriginalCoords={true} // default: true
         onClickPixel={(coords, color) => {
           setClickedPixel({ coords, color });
           setStatus(`Clicked pixel at (${coords.x}, ${coords.y})`);
@@ -163,7 +163,7 @@ export default function App() {
           ctx.fillStyle = "red";
           ctx.fillText("Demo Canvas Text", 10, 20);
         }}
-       />
+      />
 
       <div className="mt-4 space-y-2">
         <p>
@@ -206,7 +206,6 @@ export default function App() {
         >
           Reset
         </button>
-
       </div>
     </div>
   );
@@ -218,12 +217,16 @@ export default function App() {
 
 ### Props
 
-| Prop            | Type                                                                 | Description                           |
-| --------------- | -------------------------------------------------------------------- | ------------------------------------- |
-| `src`           | `string \| File`                                                     | Image source (URL or File)            |
-| `onClickPixel`  | `(pixel: { x: number; y: number; color: string }) => void`           | Callback when a pixel is clicked      |
-| `onHoverPixel`  | `(pixel: { x: number; y: number; color: string }) => void`           | Callback when hovering over a pixel   |
-| `onCanvasReady` | `(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => void` | Called when the canvas is initialized |
+| Prop                | Type                                                                 | Default | Description                                                                                                    |
+| ------------------- | -------------------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------- |
+| `src`               | `string \| File`                                                     | —       | Image source (URL or File)                                                                                     |
+| `width`             | `number`                                                             | auto    | Width of canvas (auto = natural width)                                                                         |
+| `height`            | `number`                                                             | auto    | Height of canvas (auto = natural height)                                                                       |
+| `useOriginalCoords` | `boolean`                                                            | true    | If `true`, returns coordinates relative to **original image size**. If `false`, returns **canvas coordinates** |
+| `onClickPixel`      | `(coords: PixelCoords, color: PixelColor) => void`                   | —       | Callback when a pixel is clicked                                                                               |
+| `onHoverPixel`      | `(coords: PixelCoords, color: PixelColor) => void`                   | —       | Callback when hovering over a pixel                                                                            |
+| `onCanvasReady`     | `(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => void` | —       | Called when the canvas is initialized                                                                          |
+
 
 ### Ref (optional)
 
@@ -235,6 +238,7 @@ interface CanvasImageRef {
   getContext(): CanvasRenderingContext2D | null;
 }
 ```
+
 
 ## 🧪 Development
 
@@ -250,14 +254,14 @@ npm run build
 
 ## 📌 Roadmap
 
-- [ ] Add support for annotations
-- [ ] Enable zooming and panning
-- [ ] Performance optimizations for large images
+* [ ] Add support for annotations
+* [ ] Enable zooming and panning
+* [ ] Performance optimizations for large images
 
 
 ## 🤝 Contributing
 
-PRs, issues, and suggestions are welcome!  
+PRs, issues, and suggestions are welcome!
 Please open an issue first to discuss changes.
 
 
@@ -268,6 +272,6 @@ MIT © [Neeraj Prajapati (malum)](https://github.com/neerajrp1999)
 
 ## 🔗 Links
 
-- [GitHub Repository](https://github.com/neerajrp1999/react-canvas-img)
-- [NPM Package](https://www.npmjs.com/package/react-canvas-img)
+* [GitHub Repository](https://github.com/neerajrp1999/react-canvas-img)
+* [NPM Package](https://www.npmjs.com/package/react-canvas-img)
 
