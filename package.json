@@ -1,0 +1,60 @@
+{
+  "name": "react-canvas-img",
+  "version": "1.0.0",
+  "license": "MIT",
+  "author": "Neeraj Prajapati (malum) (neerajrp1999)",
+  "main": "./dist/cjs/CanvasImage.js",
+  "module": "./dist/esm/CanvasImage.js",
+  "type": "./dist/esm/CanvasImage.d.ts",
+  "files": [
+    "./dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neerajrp1999/react-canvas-img.git"
+  },
+  "bugs": {
+    "url": "https://github.com/neerajrp1999/react-canvas-img/issues"
+  },
+  "description": "A lightweight React component to load images into a canvas and read pixel data (color and coordinates) on hover or click, with full TypeScript support.",
+  "keywords": [
+    "react",
+    "react-component",
+    "canvas",
+    "image",
+    "pixel-reader",
+    "pixel-color",
+    "typescript",
+    "hooks",
+    "color-picker",
+    "canvas-image"
+  ],
+  "homepage": "https://github.com/neerajrp1999/react-canvas-img#readme",
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "npm run clean && npm run build:esm && npm run build:cjs",
+    "build:esm": "tsc",
+    "build:cjs": "tsc --module commonjs --outDir dist/cjs",
+    "test": "jest --config jest.config.ts",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/react": "^19.1.12",
+    "husky": "^8.0.0",
+    "react": "^19.1.1",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@jest/globals": "^30.1.1",
+    "@testing-library/react": "^16.3.0",
+    "husky": "^9.1.7",
+    "jest": "^30.1.1",
+    "jest-environment-jsdom": "^30.1.1",
+    "ts-jest": "^29.4.1",
+    "ts-node": "^10.9.2"
+  }
+}
