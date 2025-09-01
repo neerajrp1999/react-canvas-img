@@ -211,7 +211,6 @@ git clone https://github.com/neerajrp1999/react-canvas-img.git
 cd react-canvas-img
 npm install
 npm run build
-npm run test
 ```
 
 
