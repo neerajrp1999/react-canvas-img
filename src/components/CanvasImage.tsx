@@ -25,6 +25,9 @@ export const CanvasImage = forwardRef<CanvasImageRef, CanvasImageProps>(
     },
     ref
   ) => {
+    const canvasProps = Object.fromEntries(
+      Object.entries(restProps).filter(([key]) => !key.endsWith("Pixel"))
+    );
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [imageSrc, setImageSrc] = useState<string>("");
     const [imgMeta, setImgMeta] = useState<{
@@ -204,7 +207,7 @@ export const CanvasImage = forwardRef<CanvasImageRef, CanvasImageProps>(
         onCopy={(e) => firePixelEvent(restProps.onCopyPixel, e)}
         onCut={(e) => firePixelEvent(restProps.onCutPixel, e)}
         onPaste={(e) => firePixelEvent(restProps.onPastePixel, e)}
-        {...restProps}
+        {...canvasProps}
       />
     );
   }
