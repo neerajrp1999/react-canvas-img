@@ -47,6 +47,7 @@ export const CanvasImage = forwardRef<CanvasImageRef, CanvasImageProps>(
         return () => URL.revokeObjectURL(objectUrl);
       } else {
         setImageSrc(src);
+        return undefined;
       }
     }, [src]);
 
@@ -105,6 +106,7 @@ export const CanvasImage = forwardRef<CanvasImageRef, CanvasImageProps>(
         });
 
         onCanvasReady?.(ctx, canvasRef.current!);
+        return undefined;
       };
     }, [imageSrc, width, height, onCanvasReady]);
 
