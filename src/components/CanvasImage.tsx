@@ -1,8 +1,30 @@
-import React, { useRef, useEffect, useState, useImperativeHandle, forwardRef } from "react";
-import type { CanvasImageProps, CanvasImageRef, PixelColor, PixelCoords } from "../interfaceOrType/interfaceOrType";
+import React, {
+  useRef,
+  useEffect,
+  useState,
+  useImperativeHandle,
+  forwardRef,
+} from "react";
+import type {
+  CanvasImageProps,
+  CanvasImageRef,
+  PixelColor,
+  PixelCoords,
+  PixelEventHandler,
+} from "../interfaceOrType/interfaceOrType";
 
 export const CanvasImage = forwardRef<CanvasImageRef, CanvasImageProps>(
-  ({ src, width, height, useOriginalCoords = true, onClickPixel, onHoverPixel, onCanvasReady }, ref) => {
+  (
+    {
+      src,
+      width,
+      height,
+      useOriginalCoords = true,
+      onCanvasReady,
+      ...restProps
+    },
+    ref
+  ) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [imageSrc, setImageSrc] = useState<string>("");
     const [imgMeta, setImgMeta] = useState<{
@@ -19,17 +41,12 @@ export const CanvasImage = forwardRef<CanvasImageRef, CanvasImageProps>(
 
     useEffect(() => {
       if (!src) return;
-
       if (src instanceof File) {
         const objectUrl = URL.createObjectURL(src);
         setImageSrc(objectUrl);
-
-        return () => {
-          URL.revokeObjectURL(objectUrl);
-        };
+        return () => URL.revokeObjectURL(objectUrl);
       } else {
         setImageSrc(src);
-        return undefined;
       }
     }, [src]);
 
@@ -95,44 +112,97 @@ export const CanvasImage = forwardRef<CanvasImageRef, CanvasImageProps>(
       if (!imgMeta) return { x, y };
       const scaleX = imgMeta.naturalWidth / imgMeta.finalWidth;
       const scaleY = imgMeta.naturalHeight / imgMeta.finalHeight;
-      return {
-        x: Math.floor(x * scaleX),
-        y: Math.floor(y * scaleY),
-      };
+      return { x: Math.floor(x * scaleX), y: Math.floor(y * scaleY) };
     };
 
-    const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-      if (!canvasRef.current || !onClickPixel || !imgMeta) return;
+    function firePixelEvent<T extends React.SyntheticEvent<HTMLCanvasElement>>(
+      handler: PixelEventHandler<T> | undefined,
+      e: T
+    ) {
+      if (!canvasRef.current || !imgMeta || !handler) return;
+
       const rect = canvasRef.current.getBoundingClientRect();
-      const x = Math.floor(e.clientX - rect.left);
-      const y = Math.floor(e.clientY - rect.top);
+      const scaleX = canvasRef.current.width / rect.width;
+      const scaleY = canvasRef.current.height / rect.height;
+
+      const client = (e as any).clientX ?? (e as any).touches?.[0]?.clientX;
+      const clientY = (e as any).clientY ?? (e as any).touches?.[0]?.clientY;
+      if (client == null || clientY == null) return;
+
+      const x = Math.floor((client - rect.left) * scaleX);
+      const y = Math.floor((clientY - rect.top) * scaleY);
+
       const ctx = canvasRef.current.getContext("2d");
       if (!ctx) return;
 
       const coords = useOriginalCoords ? mapToOriginalCoords(x, y) : { x, y };
       const color = getPixelColor(ctx, x, y);
-      onClickPixel(coords, color);
-    };
 
-    const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-      if (!canvasRef.current || !onHoverPixel || !imgMeta) return;
-      const rect = canvasRef.current.getBoundingClientRect();
-      const x = Math.floor(e.clientX - rect.left);
-      const y = Math.floor(e.clientY - rect.top);
-      const ctx = canvasRef.current.getContext("2d");
-      if (!ctx) return;
-
-      const coords = useOriginalCoords ? mapToOriginalCoords(x, y) : { x, y };
-      const color = getPixelColor(ctx, x, y);
-      onHoverPixel(coords, color);
-    };
+      handler(coords, color, e);
+    }
 
     return (
       <canvas
         ref={canvasRef}
-        onClick={handleClick}
-        onMouseMove={handleMouseMove}
-        style={{ border: "1px solid black", cursor: "crosshair" }}
+        // Mouse
+        onClick={(e) => firePixelEvent(restProps.onClickPixel, e)}
+        onContextMenu={(e) => firePixelEvent(restProps.onContextMenuPixel, e)}
+        onDoubleClick={(e) => firePixelEvent(restProps.onDoubleClickPixel, e)}
+        onDrag={(e) => firePixelEvent(restProps.onDragPixel, e)}
+        onDragEnd={(e) => firePixelEvent(restProps.onDragEndPixel, e)}
+        onDragEnter={(e) => firePixelEvent(restProps.onDragEnterPixel, e)}
+        onDragExit={(e) => firePixelEvent(restProps.onDragExitPixel, e)}
+        onDragLeave={(e) => firePixelEvent(restProps.onDragLeavePixel, e)}
+        onDragOver={(e) => firePixelEvent(restProps.onDragOverPixel, e)}
+        onDragStart={(e) => firePixelEvent(restProps.onDragStartPixel, e)}
+        onDrop={(e) => firePixelEvent(restProps.onDropPixel, e)}
+        onMouseDown={(e) => firePixelEvent(restProps.onMouseDownPixel, e)}
+        onMouseUp={(e) => firePixelEvent(restProps.onMouseUpPixel, e)}
+        onMouseEnter={(e) => firePixelEvent(restProps.onMouseEnterPixel, e)}
+        onMouseLeave={(e) => firePixelEvent(restProps.onMouseLeavePixel, e)}
+        onMouseMove={(e) => {
+          firePixelEvent(restProps.onMouseMovePixel, e);
+          firePixelEvent(restProps.onHoverPixel, e);
+        }}
+        onMouseOut={(e) => firePixelEvent(restProps.onMouseOutPixel, e)}
+        onMouseOver={(e) => firePixelEvent(restProps.onMouseOverPixel, e)}
+        // Keyboard
+        onKeyDown={(e) => firePixelEvent(restProps.onKeyDownPixel, e)}
+        onKeyPress={(e) => firePixelEvent(restProps.onKeyPressPixel, e)}
+        onKeyUp={(e) => firePixelEvent(restProps.onKeyUpPixel, e)}
+        // Focus
+        onFocus={(e) => firePixelEvent(restProps.onFocusPixel, e)}
+        onBlur={(e) => firePixelEvent(restProps.onBlurPixel, e)}
+        // Pointer
+        onPointerDown={(e) => firePixelEvent(restProps.onPointerDownPixel, e)}
+        onPointerMove={(e) => firePixelEvent(restProps.onPointerMovePixel, e)}
+        onPointerUp={(e) => firePixelEvent(restProps.onPointerUpPixel, e)}
+        onPointerCancel={(e) =>
+          firePixelEvent(restProps.onPointerCancelPixel, e)
+        }
+        onGotPointerCapture={(e) =>
+          firePixelEvent(restProps.onGotPointerCapturePixel, e)
+        }
+        onLostPointerCapture={(e) =>
+          firePixelEvent(restProps.onLostPointerCapturePixel, e)
+        }
+        onPointerEnter={(e) => firePixelEvent(restProps.onPointerEnterPixel, e)}
+        onPointerLeave={(e) => firePixelEvent(restProps.onPointerLeavePixel, e)}
+        onPointerOver={(e) => firePixelEvent(restProps.onPointerOverPixel, e)}
+        onPointerOut={(e) => firePixelEvent(restProps.onPointerOutPixel, e)}
+        // Touch
+        onTouchStart={(e) => firePixelEvent(restProps.onTouchStartPixel, e)}
+        onTouchMove={(e) => firePixelEvent(restProps.onTouchMovePixel, e)}
+        onTouchEnd={(e) => firePixelEvent(restProps.onTouchEndPixel, e)}
+        onTouchCancel={(e) => firePixelEvent(restProps.onTouchCancelPixel, e)}
+        // Wheel & Scroll
+        onWheel={(e) => firePixelEvent(restProps.onWheelPixel, e)}
+        onScroll={(e) => firePixelEvent(restProps.onScrollPixel, e)}
+        // Clipboard
+        onCopy={(e) => firePixelEvent(restProps.onCopyPixel, e)}
+        onCut={(e) => firePixelEvent(restProps.onCutPixel, e)}
+        onPaste={(e) => firePixelEvent(restProps.onPastePixel, e)}
+        {...restProps}
       />
     );
   }
