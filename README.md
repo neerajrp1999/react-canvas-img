@@ -22,7 +22,7 @@ Fully written in **TypeScript** with support for refs, hooks, and callbacks.
 
 ## ⚠️ Versioning Note
 
-* Versions with `.stable` (e.g., `"1.1.4.stable"`) are **official stable releases** → recommended for production.
+* Versions with `.stable` (e.g., `"1.1.4-stable"`) are **official stable releases** → recommended for production.
 * Other versions (without `.stable`) may be experimental or under development → **not recommended** for production.
 
 
