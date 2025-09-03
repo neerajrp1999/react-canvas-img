@@ -29,9 +29,12 @@ Fully written in **TypeScript** with support for refs, hooks, and callbacks.
 ## 📦 Installation
 
 ```bash
-npm install react-canvas-img
+npm install react-canvas-img@stable
+npm install react-canvas-img@1.1.4-stable
+
 # or
-yarn add react-canvas-img
+yarn add react-canvas-img@stable
+yarn add react-canvas-img@1.1.4-stable
 ````
 
 ## 🚀 Usage
