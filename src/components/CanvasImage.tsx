@@ -1,41 +1,63 @@
-import React, {
-  useRef,
-  useEffect,
-  useState,
-  useImperativeHandle,
-  forwardRef,
-} from "react";
-import type {
-  CanvasImageProps,
-  CanvasImageRef,
-  PixelColor,
-  PixelCoords,
-  PixelEventHandler,
-} from "../interfaceOrType/interfaceOrType";
+import React, { useRef, useEffect, useState, useImperativeHandle, forwardRef, } from "react";
+import type { CanvasImageProps, CanvasImageRef, PixelCoords, PixelEventHandler, ImageMeta, } from "../interfaceOrType/interfaceOrType";
 
 export const CanvasImage = forwardRef<CanvasImageRef, CanvasImageProps>(
-  (
-    {
-      src,
-      width,
-      height,
-      useOriginalCoords = true,
-      onCanvasReady,
-      ...restProps
-    },
-    ref
-  ) => {
+  ({ src, width, height, useOriginalCoords = true, onCanvasReady, ...restProps }, ref) => {
+
     const canvasProps = Object.fromEntries(
-      Object.entries(restProps).filter(([key]) => !key.endsWith("Pixel"))
+      Object.entries(restProps).filter(
+        ([key]) => !(key.endsWith("Pixel") || key === "divClassName" || key === "divStyle" || key === "style")
+      )
     );
+
+    const divClassName: string | undefined = restProps.divClassName;
+    const divStyle: React.CSSProperties | undefined = restProps.divStyle;
+    const canvas_style: React.CSSProperties | undefined = restProps.style;
+
+    const [shiftPressed, setShiftPressed] = useState(false);
+    const [zoom, setZoom] = useState<number>(1);
+    const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [imageObj, setImageObj] = useState<HTMLImageElement | null>(null);
+    const [imgMeta, setImgMeta] = useState<ImageMeta | null>(null);
+
+    const containerRef = useRef<HTMLDivElement | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
-    const [imageSrc, setImageSrc] = useState<string>("");
-    const [imgMeta, setImgMeta] = useState<{
-      naturalWidth: number;
-      naturalHeight: number;
-      finalWidth: number;
-      finalHeight: number;
-    } | null>(null);
+    const offscreenRef = useRef<HTMLCanvasElement | null>(null);
+    const lastPosRef = useRef({ x: 0, y: 0 });
+    const objectUrlRef = useRef<string | null>(null);
+
+    useEffect(() => {
+      const onKeyDown = (e: KeyboardEvent) => e.key === "Shift" && setShiftPressed(true);
+      const onKeyUp = (e: KeyboardEvent) => e.key === "Shift" && setShiftPressed(false);
+      const onWindowBlur = () => {
+        setShiftPressed(false);
+        setIsDragging(false);
+      };
+      const onVisibility = () => document.hidden && setShiftPressed(false);
+
+      window.addEventListener("keydown", onKeyDown);
+      window.addEventListener("keyup", onKeyUp);
+      window.addEventListener("blur", onWindowBlur);
+      document.addEventListener("visibilitychange", onVisibility);
+
+      return () => {
+        window.removeEventListener("keydown", onKeyDown);
+        window.removeEventListener("keyup", onKeyUp);
+        window.removeEventListener("blur", onWindowBlur);
+        document.removeEventListener("visibilitychange", onVisibility);
+      };
+    }, []);
+
+    useEffect(() => {
+      const onGlobalUp = () => setIsDragging(false);
+      window.addEventListener("mouseup", onGlobalUp);
+      window.addEventListener("pointerup", onGlobalUp);
+      return () => {
+        window.removeEventListener("mouseup", onGlobalUp);
+        window.removeEventListener("pointerup", onGlobalUp);
+      };
+    }, []);
 
     useImperativeHandle(ref, () => ({
       getCanvas: () => canvasRef.current,
@@ -44,74 +66,56 @@ export const CanvasImage = forwardRef<CanvasImageRef, CanvasImageProps>(
 
     useEffect(() => {
       if (!src) return;
+      const img = new Image();
       if (src instanceof File) {
         const objectUrl = URL.createObjectURL(src);
-        setImageSrc(objectUrl);
-        return () => URL.revokeObjectURL(objectUrl);
+        objectUrlRef.current = objectUrl;
+        img.src = objectUrl;
       } else {
-        setImageSrc(src);
-        return undefined;
+        img.src = src;
       }
-    }, [src]);
-
-    const getPixelColor = (
-      ctx: CanvasRenderingContext2D,
-      x: number,
-      y: number
-    ): PixelColor => {
-      const pixel = ctx.getImageData(x, y, 1, 1).data;
-      const rgb = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
-      const hex = `#${(
-        (1 << 24) +
-        (pixel[0] << 16) +
-        (pixel[1] << 8) +
-        pixel[2]
-      )
-        .toString(16)
-        .slice(1)}`;
-      return { rgb, hex };
-    };
-
-    useEffect(() => {
-      if (!imageSrc || !canvasRef.current) return;
-      const ctx = canvasRef.current.getContext("2d");
-      if (!ctx) return;
-
-      const img = new Image();
-      img.src = imageSrc;
-
       img.onload = () => {
         let finalWidth = width ?? img.naturalWidth;
         let finalHeight = height ?? img.naturalHeight;
-
-        if (width && !height) {
-          finalHeight = Math.floor(
-            (img.naturalHeight / img.naturalWidth) * width
-          );
-        }
-        if (!width && height) {
-          finalWidth = Math.floor(
-            (img.naturalWidth / img.naturalHeight) * height
-          );
-        }
-
-        canvasRef.current!.width = finalWidth;
-        canvasRef.current!.height = finalHeight;
-
-        ctx.clearRect(0, 0, finalWidth, finalHeight);
-        ctx.drawImage(img, 0, 0, finalWidth, finalHeight);
-
-        setImgMeta({
-          naturalWidth: img.naturalWidth,
-          naturalHeight: img.naturalHeight,
-          finalWidth,
-          finalHeight,
-        });
-
-        onCanvasReady?.(ctx, canvasRef.current!);
-        return undefined;
+        if (width && !height) finalHeight = Math.floor((img.naturalHeight / img.naturalWidth) * width);
+        if (!width && height) finalWidth = Math.floor((img.naturalWidth / img.naturalHeight) * height);
+        setImgMeta({ naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight, finalWidth, finalHeight });
+        setImageObj(img);
       };
-    }, [imageSrc, width, height, onCanvasReady]);
+      return () => {
+        if (objectUrlRef.current) {
+          URL.revokeObjectURL(objectUrlRef.current);
+          objectUrlRef.current = null;
+        }
+      };
+    }, [src, width, height]);
+
+    useEffect(() => {
+      if (!imageObj || !imgMeta) return;
+      const off = document.createElement("canvas");
+      off.width = imgMeta.finalWidth;
+      off.height = imgMeta.finalHeight;
+      const offCtx = off.getContext("2d");
+      if (!offCtx) return;
+      offCtx.drawImage(imageObj, 0, 0, imgMeta.finalWidth, imgMeta.finalHeight);
+      offscreenRef.current = off;
+    }, [imageObj, imgMeta]);
+
+    useEffect(() => {
+      if (!canvasRef.current || !imageObj || !imgMeta) return;
+      const canvas = canvasRef.current;
+      const visibleW = Math.max(1, Math.round(imgMeta.finalWidth * zoom));
+      const visibleH = Math.max(1, Math.round(imgMeta.finalHeight * zoom));
+      canvas.width = visibleW;
+      canvas.height = visibleH;
+      canvas.style.width = `${visibleW}px`;
+      canvas.style.height = `${visibleH}px`;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.clearRect(0, 0, visibleW, visibleH);
+      ctx.drawImage(imageObj, 0, 0, visibleW, visibleH);
+      onCanvasReady?.(ctx, canvas);
+    }, [imageObj, imgMeta, zoom, onCanvasReady]);
 
     const mapToOriginalCoords = (x: number, y: number): PixelCoords => {
       if (!imgMeta) return { x, y };
@@ -124,91 +128,102 @@ export const CanvasImage = forwardRef<CanvasImageRef, CanvasImageProps>(
       handler: PixelEventHandler<T> | undefined,
       e: T
     ) {
-      if (!canvasRef.current || !imgMeta || !handler) return;
-
-      const rect = canvasRef.current.getBoundingClientRect();
-      const scaleX = canvasRef.current.width / rect.width;
-      const scaleY = canvasRef.current.height / rect.height;
-
-      const client = (e as any).clientX ?? (e as any).touches?.[0]?.clientX;
+      if (!handler || !imgMeta || !offscreenRef.current || !containerRef.current) return;
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const clientX = (e as any).clientX ?? (e as any).touches?.[0]?.clientX;
       const clientY = (e as any).clientY ?? (e as any).touches?.[0]?.clientY;
-      if (client == null || clientY == null) return;
-
-      const x = Math.floor((client - rect.left) * scaleX);
-      const y = Math.floor((clientY - rect.top) * scaleY);
-
-      const ctx = canvasRef.current.getContext("2d");
-      if (!ctx) return;
-
-      const coords = useOriginalCoords ? mapToOriginalCoords(x, y) : { x, y };
-      const color = getPixelColor(ctx, x, y);
-
-      handler(coords, color, e);
+      if (clientX == null || clientY == null) return;
+      const imageX = (clientX - containerRect.left - offset.x) / zoom;
+      const imageY = (clientY - containerRect.top - offset.y) / zoom;
+      const ix = Math.floor(imageX);
+      const iy = Math.floor(imageY);
+      if (ix < 0 || iy < 0 || ix >= imgMeta.finalWidth || iy >= imgMeta.finalHeight) return;
+      const offCtx = offscreenRef.current.getContext("2d");
+      if (!offCtx) return;
+      const pixel = offCtx.getImageData(ix, iy, 1, 1).data;
+      const rgb = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
+      const hex = `#${((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2]).toString(16).slice(1)}`;
+      const coords = useOriginalCoords ? mapToOriginalCoords(ix, iy) : { x: ix, y: iy };
+      handler(coords, { rgb, hex }, e);
     }
 
+    const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+      if (!e.shiftKey || !imgMeta || !containerRef.current) return;
+      e.preventDefault();
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const clientX = e.clientX;
+      const clientY = e.clientY;
+      const imageX = (clientX - containerRect.left - offset.x) / zoom;
+      const imageY = (clientY - containerRect.top - offset.y) / zoom;
+      const zoomStep = 0.1;
+      const newZoom = e.deltaY < 0 ? Math.min(zoom + zoomStep, 10) : Math.max(zoom - zoomStep, 0.1);
+      const newOffsetX = clientX - containerRect.left - imageX * newZoom;
+      const newOffsetY = clientY - containerRect.top - imageY * newZoom;
+      setZoom(newZoom);
+      setOffset({ x: newOffsetX, y: newOffsetY });
+    };
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+      setShiftPressed(e.shiftKey);
+      if (!isDragging) return;
+      const dx = e.clientX - lastPosRef.current.x;
+      const dy = e.clientY - lastPosRef.current.y;
+      lastPosRef.current = { x: e.clientX, y: e.clientY };
+      setOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+    };
+
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!e.shiftKey || e.button !== 2) return;
+      e.preventDefault();
+      setIsDragging(true);
+      lastPosRef.current = { x: e.clientX, y: e.clientY };
+    };
+
+    const handleMouseUp = () => isDragging && setIsDragging(false);
+
+    const computedCursor = shiftPressed ? (isDragging ? "grabbing" : "grab") : "crosshair";
+
     return (
-      <canvas
-        ref={canvasRef}
-        // Mouse
-        onClick={(e) => firePixelEvent(restProps.onClickPixel, e)}
-        onContextMenu={(e) => firePixelEvent(restProps.onContextMenuPixel, e)}
-        onDoubleClick={(e) => firePixelEvent(restProps.onDoubleClickPixel, e)}
-        onDrag={(e) => firePixelEvent(restProps.onDragPixel, e)}
-        onDragEnd={(e) => firePixelEvent(restProps.onDragEndPixel, e)}
-        onDragEnter={(e) => firePixelEvent(restProps.onDragEnterPixel, e)}
-        onDragExit={(e) => firePixelEvent(restProps.onDragExitPixel, e)}
-        onDragLeave={(e) => firePixelEvent(restProps.onDragLeavePixel, e)}
-        onDragOver={(e) => firePixelEvent(restProps.onDragOverPixel, e)}
-        onDragStart={(e) => firePixelEvent(restProps.onDragStartPixel, e)}
-        onDrop={(e) => firePixelEvent(restProps.onDropPixel, e)}
-        onMouseDown={(e) => firePixelEvent(restProps.onMouseDownPixel, e)}
-        onMouseUp={(e) => firePixelEvent(restProps.onMouseUpPixel, e)}
-        onMouseEnter={(e) => firePixelEvent(restProps.onMouseEnterPixel, e)}
-        onMouseLeave={(e) => firePixelEvent(restProps.onMouseLeavePixel, e)}
-        onMouseMove={(e) => {
-          firePixelEvent(restProps.onMouseMovePixel, e);
-          firePixelEvent(restProps.onHoverPixel, e);
+      <div
+        ref={containerRef}
+        className={divClassName}
+        style={{
+          width: imgMeta?.finalWidth ? `${imgMeta.finalWidth}px` : undefined,
+          height: imgMeta?.finalHeight ? `${imgMeta.finalHeight}px` : undefined,
+          overflow: "hidden",
+          border: "1px solid #ccc",
+          position: "relative",
+          touchAction: "none",
+          cursor: computedCursor,
+          ...divStyle,
         }}
-        onMouseOut={(e) => firePixelEvent(restProps.onMouseOutPixel, e)}
-        onMouseOver={(e) => firePixelEvent(restProps.onMouseOverPixel, e)}
-        // Keyboard
-        onKeyDown={(e) => firePixelEvent(restProps.onKeyDownPixel, e)}
-        onKeyPress={(e) => firePixelEvent(restProps.onKeyPressPixel, e)}
-        onKeyUp={(e) => firePixelEvent(restProps.onKeyUpPixel, e)}
-        // Focus
-        onFocus={(e) => firePixelEvent(restProps.onFocusPixel, e)}
-        onBlur={(e) => firePixelEvent(restProps.onBlurPixel, e)}
-        // Pointer
-        onPointerDown={(e) => firePixelEvent(restProps.onPointerDownPixel, e)}
-        onPointerMove={(e) => firePixelEvent(restProps.onPointerMovePixel, e)}
-        onPointerUp={(e) => firePixelEvent(restProps.onPointerUpPixel, e)}
-        onPointerCancel={(e) =>
-          firePixelEvent(restProps.onPointerCancelPixel, e)
-        }
-        onGotPointerCapture={(e) =>
-          firePixelEvent(restProps.onGotPointerCapturePixel, e)
-        }
-        onLostPointerCapture={(e) =>
-          firePixelEvent(restProps.onLostPointerCapturePixel, e)
-        }
-        onPointerEnter={(e) => firePixelEvent(restProps.onPointerEnterPixel, e)}
-        onPointerLeave={(e) => firePixelEvent(restProps.onPointerLeavePixel, e)}
-        onPointerOver={(e) => firePixelEvent(restProps.onPointerOverPixel, e)}
-        onPointerOut={(e) => firePixelEvent(restProps.onPointerOutPixel, e)}
-        // Touch
-        onTouchStart={(e) => firePixelEvent(restProps.onTouchStartPixel, e)}
-        onTouchMove={(e) => firePixelEvent(restProps.onTouchMovePixel, e)}
-        onTouchEnd={(e) => firePixelEvent(restProps.onTouchEndPixel, e)}
-        onTouchCancel={(e) => firePixelEvent(restProps.onTouchCancelPixel, e)}
-        // Wheel & Scroll
-        onWheel={(e) => firePixelEvent(restProps.onWheelPixel, e)}
-        onScroll={(e) => firePixelEvent(restProps.onScrollPixel, e)}
-        // Clipboard
-        onCopy={(e) => firePixelEvent(restProps.onCopyPixel, e)}
-        onCut={(e) => firePixelEvent(restProps.onCutPixel, e)}
-        onPaste={(e) => firePixelEvent(restProps.onPastePixel, e)}
-        {...canvasProps}
-      />
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onContextMenu={(e) => e.shiftKey && e.preventDefault()}
+      >
+        <canvas
+          ref={canvasRef}
+          style={{
+            ...canvas_style,
+            display: "block",
+            cursor: computedCursor,
+            position: "absolute",
+            left: `${offset.x}px`,
+            top: `${offset.y}px`,
+          }}
+          onClick={(e) => firePixelEvent(restProps.onClickPixel, e)}
+          onContextMenu={(e) => firePixelEvent(restProps.onContextMenuPixel, e)}
+          onDoubleClick={(e) => firePixelEvent(restProps.onDoubleClickPixel, e)}
+          onMouseMove={(e) => {
+            firePixelEvent(restProps.onMouseMovePixel, e);
+            firePixelEvent(restProps.onHoverPixel, e);
+          }}
+          {...canvasProps}
+        />
+      </div>
     );
   }
 );

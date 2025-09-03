@@ -7,6 +7,7 @@
 A lightweight **React component** to load images into a `<canvas>` and read pixel data (color + coordinates) for **all React events** (click, hover, pointer, touch, drag, keyboard, focus, wheel, clipboard).  
 Fully written in **TypeScript** with support for refs, hooks, and callbacks.
 
+
 ## ✨ Features
 
 * Load images into `<canvas>` easily
@@ -14,9 +15,15 @@ Fully written in **TypeScript** with support for refs, hooks, and callbacks.
 * Built-in `onHoverPixel` alias (fires on `onMouseMove`)
 * Toggle between **canvas coordinates** and **original image coordinates**
 * Exposes canvas context and element via `onCanvasReady`
+* Built-in zoom & pan (hold Shift + Scroll to zoom, Shift + Right Click + Drag to pan)
 * Supports refs for direct canvas access
 * Written in TypeScript – full type definitions included
 * Lightweight, no external dependencies
+
+## ⚠️ Versioning Note
+
+* Versions with `.stable` (e.g., `"1.1.4.stable"`) are **official stable releases** → recommended for production.
+* Other versions (without `.stable`) may be experimental or under development → **not recommended** for production.
 
 
 ## 📦 Installation
@@ -45,6 +52,9 @@ export default function App() {
       width={400}     // optional → default: auto
       height={300}    // optional → default: auto
       useOriginalCoords={true} // optional → default: true
+      style={{}}
+      divClassName=""
+      divStyle={{}}
 
       // Mouse
       onClickPixel={(coords, color) => setClickedPixel({ coords, color })}
@@ -462,8 +472,8 @@ npm run build
 ## 📌 Roadmap
 
 * [ ] Add support for annotations
-* [ ] Enable zooming and panning
 * [ ] Performance optimizations for large images
+* [x] Enable zooming and panning
 
 ## 🤝 Contributing
 
@@ -485,3 +495,7 @@ MIT © [Neeraj Prajapati (malum)](https://github.com/neerajrp1999)
 
 Do you want me to also add a **usage table** (like a big list) with all event props and their event type signatures (e.g., `onPointerMovePixel: PixelEventHandler<React.PointerEvent<HTMLCanvasElement>>`) so it’s crystal clear for users?
 ```
+
+
+
+

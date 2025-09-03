@@ -13,6 +13,8 @@ export interface CanvasImageProps extends DetailedHTMLProps<CanvasHTMLAttributes
     width?: number;
     height?: number;
     useOriginalCoords?: boolean;
+    divClassName?: string;
+    divStyle?: React.CSSProperties;
     onClickPixel?: PixelEventHandler<React.MouseEvent<HTMLCanvasElement>>;
     onHoverPixel?: PixelEventHandler<React.MouseEvent<HTMLCanvasElement>>;
     onContextMenuPixel?: PixelEventHandler<React.MouseEvent<HTMLCanvasElement>>;
@@ -61,4 +63,10 @@ export interface CanvasImageProps extends DetailedHTMLProps<CanvasHTMLAttributes
 export interface CanvasImageRef {
     getCanvas: () => HTMLCanvasElement | null;
     getContext: () => CanvasRenderingContext2D | null;
+}
+export interface ImageMeta {
+    naturalWidth: number;
+    naturalHeight: number;
+    finalWidth: number;
+    finalHeight: number;
 }

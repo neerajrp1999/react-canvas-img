@@ -3,14 +3,6 @@ import type { CanvasHTMLAttributes, DetailedHTMLProps } from "react";
 export type PixelCoords = { x: number; y: number };
 export type PixelColor = { rgb: string; hex: string };
 
-/**
- * Pixel-aware event callback type.
- * Always provides:
- * - coords (x, y in canvas space or mapped coords)
- * - color (pixel color at that position)
- * - event (original React event for flexibility)
- */
-
 export type PixelEventHandler<
   T extends React.SyntheticEvent<HTMLCanvasElement>
 > = (coords: PixelCoords, color: PixelColor, event: T) => void;
@@ -24,6 +16,8 @@ export interface CanvasImageProps
   width?: number;
   height?: number;
   useOriginalCoords?: boolean;
+  divClassName?: string;
+  divStyle?: React.CSSProperties;
 
   /** Mouse Events */
   onClickPixel?: PixelEventHandler<React.MouseEvent<HTMLCanvasElement>>;
@@ -46,7 +40,7 @@ export interface CanvasImageProps
   onMouseOverPixel?: PixelEventHandler<React.MouseEvent<HTMLCanvasElement>>;
   onMouseUpPixel?: PixelEventHandler<React.MouseEvent<HTMLCanvasElement>>;
 
-  /** Keyboard Events (only if canvas focusable with tabIndex) */
+  /** Keyboard Events */
   onKeyDownPixel?: PixelEventHandler<React.KeyboardEvent<HTMLCanvasElement>>;
   onKeyPressPixel?: PixelEventHandler<React.KeyboardEvent<HTMLCanvasElement>>;
   onKeyUpPixel?: PixelEventHandler<React.KeyboardEvent<HTMLCanvasElement>>;
@@ -77,7 +71,7 @@ export interface CanvasImageProps
   onPointerOverPixel?: PixelEventHandler<React.PointerEvent<HTMLCanvasElement>>;
   onPointerOutPixel?: PixelEventHandler<React.PointerEvent<HTMLCanvasElement>>;
 
-  /** Touch Events (mobile / tablets) */
+  /** Touch Events */
   onTouchStartPixel?: PixelEventHandler<React.TouchEvent<HTMLCanvasElement>>;
   onTouchMovePixel?: PixelEventHandler<React.TouchEvent<HTMLCanvasElement>>;
   onTouchEndPixel?: PixelEventHandler<React.TouchEvent<HTMLCanvasElement>>;
@@ -87,7 +81,7 @@ export interface CanvasImageProps
   onWheelPixel?: PixelEventHandler<React.WheelEvent<HTMLCanvasElement>>;
   onScrollPixel?: PixelEventHandler<React.UIEvent<HTMLCanvasElement>>;
 
-  /** Clipboard Events (if canvas is focusable with tabIndex) */
+  /** Clipboard Events */
   onCopyPixel?: PixelEventHandler<React.ClipboardEvent<HTMLCanvasElement>>;
   onCutPixel?: PixelEventHandler<React.ClipboardEvent<HTMLCanvasElement>>;
   onPastePixel?: PixelEventHandler<React.ClipboardEvent<HTMLCanvasElement>>;
@@ -102,4 +96,11 @@ export interface CanvasImageProps
 export interface CanvasImageRef {
   getCanvas: () => HTMLCanvasElement | null;
   getContext: () => CanvasRenderingContext2D | null;
+}
+
+export interface ImageMeta {
+  naturalWidth: number;
+  naturalHeight: number;
+  finalWidth: number;
+  finalHeight: number;
 }
