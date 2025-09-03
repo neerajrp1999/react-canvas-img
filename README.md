@@ -22,7 +22,7 @@ Fully written in **TypeScript** with support for refs, hooks, and callbacks.
 
 ## ⚠️ Versioning Note
 
-* Versions with `.stable` (e.g., `"1.1.4-stable"`) are **official stable releases** → recommended for production.
+* Versions with `.stable` (e.g., `"1.1.5-stable"`) are **official stable releases** → recommended for production.
 * Other versions (without `.stable`) may be experimental or under development → **not recommended** for production.
 
 
@@ -30,11 +30,11 @@ Fully written in **TypeScript** with support for refs, hooks, and callbacks.
 
 ```bash
 npm install react-canvas-img@stable
-npm install react-canvas-img@1.1.4-stable
+npm install react-canvas-img@1.1.5-stable
 
 # or
 yarn add react-canvas-img@stable
-yarn add react-canvas-img@1.1.4-stable
+yarn add react-canvas-img@1.1.5-stable
 ````
 
 ## 🚀 Usage
@@ -492,11 +492,6 @@ MIT © [Neeraj Prajapati (malum)](https://github.com/neerajrp1999)
 * [GitHub Repository](https://github.com/neerajrp1999/react-canvas-img)
 * [NPM Package](https://www.npmjs.com/package/react-canvas-img)
 
-```
-
----
-
-Do you want me to also add a **usage table** (like a big list) with all event props and their event type signatures (e.g., `onPointerMovePixel: PixelEventHandler<React.PointerEvent<HTMLCanvasElement>>`) so it’s crystal clear for users?
 ```
 
 
