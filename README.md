@@ -30,11 +30,11 @@ Fully written in **TypeScript** with support for refs, hooks, and callbacks.
 
 ```bash
 npm install react-canvas-img@stable
-npm install react-canvas-img@1.1.5-stable
+npm install react-canvas-img
 
 # or
 yarn add react-canvas-img@stable
-yarn add react-canvas-img@1.1.5-stable
+yarn add react-canvas-img
 ````
 
 ## 🚀 Usage
@@ -44,6 +44,8 @@ import { useState } from "react";
 import CanvasImage, { type PixelCoords, type PixelColor } from "react-canvas-img";
 
 export default function App() {
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [clickedPixel, setClickedPixel] = useState<{
     coords: PixelCoords;
     color: PixelColor;
@@ -70,333 +72,20 @@ export default function App() {
       onTouchStartPixel={(coords, color) => console.log("Touch start:", coords, color)}
 
       // Lifecycle
-      onCanvasReady={(ctx) => {
-        ctx.fillStyle = "red";
-        ctx.fillText("Demo Text", 10, 20);
+      onCanvasReady={(ctx, canvas) => {
+        canvasRef.current = canvas;
       }}
     />
   );
 }
 ```
 
+
 ## 🎮 Demo Example
 
-```tsx
-import { useState } from "react";
-import CanvasImage, { type PixelCoords, type PixelColor } from "@react-canvas-img";
+* 🔗 **Live Demo:** [https://react-canvas-img-example.vercel.app/](https://react-canvas-img-example.vercel.app/)
+* 📂 **GitHub Code:** [https://github.com/malum309/react-canvas-img-example](https://github.com/malum309/react-canvas-img-example)
 
-export default function App() {
-  const [imageSrc, setImageSrc] = useState<string | File>("/sample.png");
-  const [width, setWidth] = useState<string>("auto");
-  const [height, setHeight] = useState<string>("auto");
-
-  const [clickedPixel, setClickedPixel] = useState<{
-    coords: PixelCoords;
-    color: PixelColor;
-  } | null>(null);
-
-  const [hoverPixel, setHoverPixel] = useState<{
-    coords: PixelCoords;
-    color: PixelColor;
-  } | null>(null);
-
-  const [canvasInfo, setCanvasInfo] = useState<{
-    width: number;
-    height: number;
-  } | null>(null);
-
-  const [status, setStatus] = useState<string>("Idle");
-
-  const parseSize = (val: string): number | undefined =>
-    val === "auto" || val.trim() === "" ? undefined : parseInt(val, 10);
-
-  return (
-    <div className="p-4 space-y-4">
-      <h2 className="text-xl font-bold">🎨 react-canvas-img Demo</h2>
-
-      <div>
-        <label className="font-medium">Upload Image: </label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            if (e.target.files && e.target.files[0]) {
-              setImageSrc(e.target.files[0]);
-              setStatus("Image selected from file");
-            }
-          }}
-          className="border p-1 w-full"
-        />
-      </div>
-
-      <div>
-        <label className="font-medium">Image URL: </label>
-        <input
-          type="text"
-          value={typeof imageSrc === "string" ? imageSrc : ""}
-          onChange={(e) => {
-            setImageSrc(e.target.value);
-            setStatus("Image URL set");
-          }}
-          placeholder="Enter image URL"
-          className="border p-1 w-full"
-        />
-      </div>
-
-      <div className="flex gap-2">
-        <div>
-          <label className="font-medium">Width: </label>
-          <input
-            type="text"
-            value={width}
-            onChange={(e) => setWidth(e.target.value)}
-            placeholder="auto or number"
-            className="border p-1 w-24"
-          />
-        </div>
-        <div>
-          <label className="font-medium">Height: </label>
-          <input
-            type="text"
-            value={height}
-            onChange={(e) => setHeight(e.target.value)}
-            placeholder="auto or number"
-            className="border p-1 w-24"
-          />
-        </div>
-      </div>
-
-      <CanvasImage
-        src={imageSrc}
-        width={parseSize(width)} // default: auto
-        height={parseSize(height)} // default: auto
-        useOriginalCoords={true} // default: true
-        onClickPixel={(coords, color) => {
-          setClickedPixel({ coords, color });
-          setStatus(`Clicked pixel at (${coords.x}, ${coords.y})`);
-        }}
-        onHoverPixel={(coords, color) => {
-          setHoverPixel({ coords, color });
-        }}
-        onCanvasReady={(ctx, canvas) => {
-          setCanvasInfo({ width: canvas.width, height: canvas.height });
-          ctx.font = "16px sans-serif";
-          ctx.fillStyle = "red";
-          ctx.fillText("Demo Canvas Text", 10, 20);
-        }}
-        onMouseLeavePixel={(coords, color) => {
-          console.log("Right-clicked pixel at", coords);
-          console.log("Color:", color);
-          setStatus(`Right-clicked pixel at (${coords.x}, ${coords.y})`);
-          
-        }}
-        style={{ cursor: "crosshair" }}
-        
-      />
-
-      <div className="mt-4 space-y-2">
-        <p>
-          <strong>Status:</strong> {status}
-        </p>
-        {clickedPixel && (
-          <p>
-            <strong>Clicked:</strong> ({clickedPixel.coords.x},{" "}
-            {clickedPixel.coords.y}) → {clickedPixel.color.rgb} |{" "}
-            {clickedPixel.color.hex}
-          </p>
-        )}
-        {hoverPixel && (
-          <p>
-            <strong>Hover:</strong> ({hoverPixel.coords.x},{" "}
-            {hoverPixel.coords.y}) → {hoverPixel.color.rgb} |{" "}
-            {hoverPixel.color.hex}
-          </p>
-        )}
-        {canvasInfo && (
-          <p>
-            <strong>Canvas Ready:</strong> {canvasInfo.width} ×{" "}
-            {canvasInfo.height}
-          </p>
-        )}
-      </div>
-
-      <div className="flex gap-2">
-        <button
-          onClick={() => {
-            setImageSrc("/sample.png");
-            setWidth("auto");
-            setHeight("auto");
-            setClickedPixel(null);
-            setHoverPixel(null);
-            setCanvasInfo(null);
-            setStatus("Reset to default");
-          }}
-          className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
-        >
-          Reset
-        </button>
-      </div>
-    </div>
-  );
-}
-import { useState } from "react";
-import CanvasImage, { type PixelCoords, type PixelColor } from "@react-canvas-img";
-
-export default function App() {
-  const [imageSrc, setImageSrc] = useState<string | File>("/sample.png");
-  const [width, setWidth] = useState<string>("auto");
-  const [height, setHeight] = useState<string>("auto");
-
-  const [clickedPixel, setClickedPixel] = useState<{
-    coords: PixelCoords;
-    color: PixelColor;
-  } | null>(null);
-
-  const [hoverPixel, setHoverPixel] = useState<{
-    coords: PixelCoords;
-    color: PixelColor;
-  } | null>(null);
-
-  const [canvasInfo, setCanvasInfo] = useState<{
-    width: number;
-    height: number;
-  } | null>(null);
-
-  const [status, setStatus] = useState<string>("Idle");
-
-  const parseSize = (val: string): number | undefined =>
-    val === "auto" || val.trim() === "" ? undefined : parseInt(val, 10);
-
-  return (
-    <div className="p-4 space-y-4">
-      <h2 className="text-xl font-bold">🎨 react-canvas-img Demo</h2>
-
-      <div>
-        <label className="font-medium">Upload Image: </label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            if (e.target.files && e.target.files[0]) {
-              setImageSrc(e.target.files[0]);
-              setStatus("Image selected from file");
-            }
-          }}
-          className="border p-1 w-full"
-        />
-      </div>
-
-      <div>
-        <label className="font-medium">Image URL: </label>
-        <input
-          type="text"
-          value={typeof imageSrc === "string" ? imageSrc : ""}
-          onChange={(e) => {
-            setImageSrc(e.target.value);
-            setStatus("Image URL set");
-          }}
-          placeholder="Enter image URL"
-          className="border p-1 w-full"
-        />
-      </div>
-
-      <div className="flex gap-2">
-        <div>
-          <label className="font-medium">Width: </label>
-          <input
-            type="text"
-            value={width}
-            onChange={(e) => setWidth(e.target.value)}
-            placeholder="auto or number"
-            className="border p-1 w-24"
-          />
-        </div>
-        <div>
-          <label className="font-medium">Height: </label>
-          <input
-            type="text"
-            value={height}
-            onChange={(e) => setHeight(e.target.value)}
-            placeholder="auto or number"
-            className="border p-1 w-24"
-          />
-        </div>
-      </div>
-
-      <CanvasImage
-        src={imageSrc}
-        width={parseSize(width)} // default: auto
-        height={parseSize(height)} // default: auto
-        useOriginalCoords={true} // default: true
-        onClickPixel={(coords, color) => {
-          setClickedPixel({ coords, color });
-          setStatus(`Clicked pixel at (${coords.x}, ${coords.y})`);
-        }}
-        onHoverPixel={(coords, color) => {
-          setHoverPixel({ coords, color });
-        }}
-        onCanvasReady={(ctx, canvas) => {
-          setCanvasInfo({ width: canvas.width, height: canvas.height });
-          ctx.font = "16px sans-serif";
-          ctx.fillStyle = "red";
-          ctx.fillText("Demo Canvas Text", 10, 20);
-        }}
-        onMouseLeavePixel={(coords, color) => {
-          console.log("Right-clicked pixel at", coords);
-          console.log("Color:", color);
-          setStatus(`Right-clicked pixel at (${coords.x}, ${coords.y})`);
-          
-        }}
-        style={{ cursor: "crosshair" }}
-        
-      />
-
-      <div className="mt-4 space-y-2">
-        <p>
-          <strong>Status:</strong> {status}
-        </p>
-        {clickedPixel && (
-          <p>
-            <strong>Clicked:</strong> ({clickedPixel.coords.x},{" "}
-            {clickedPixel.coords.y}) → {clickedPixel.color.rgb} |{" "}
-            {clickedPixel.color.hex}
-          </p>
-        )}
-        {hoverPixel && (
-          <p>
-            <strong>Hover:</strong> ({hoverPixel.coords.x},{" "}
-            {hoverPixel.coords.y}) → {hoverPixel.color.rgb} |{" "}
-            {hoverPixel.color.hex}
-          </p>
-        )}
-        {canvasInfo && (
-          <p>
-            <strong>Canvas Ready:</strong> {canvasInfo.width} ×{" "}
-            {canvasInfo.height}
-          </p>
-        )}
-      </div>
-
-      <div className="flex gap-2">
-        <button
-          onClick={() => {
-            setImageSrc("/sample.png");
-            setWidth("auto");
-            setHeight("auto");
-            setClickedPixel(null);
-            setHoverPixel(null);
-            setCanvasInfo(null);
-            setStatus("Reset to default");
-          }}
-          className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
-        >
-          Reset
-        </button>
-      </div>
-    </div>
-  );
-}
-```
 
 ## 📚 API
 

@@ -30,10 +30,12 @@ export const CanvasImage = forwardRef<CanvasImageRef, CanvasImageProps>(
     useEffect(() => {
       const onKeyDown = (e: KeyboardEvent) => e.key === "Shift" && setShiftPressed(true);
       const onKeyUp = (e: KeyboardEvent) => e.key === "Shift" && setShiftPressed(false);
-      const onWindowBlur = () => {
+
+      const onWindowBlur: (this: Window, ev: FocusEvent) => void = () => {
         setShiftPressed(false);
         setIsDragging(false);
       };
+
       const onVisibility = () => document.hidden && setShiftPressed(false);
 
       window.addEventListener("keydown", onKeyDown);
